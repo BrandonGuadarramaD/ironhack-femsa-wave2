@@ -1,0 +1,457 @@
+/*
+Single Responsibility Principle (SRP): Each class or module should handle only one responsibility to ensure 
+simplicity and reduce potential complications in development.
+
+Open/Closed Principle (OCP): Software entities should be open for extension but closed for modification, 
+which allows for enhanced functionality without altering existing code.
+
+Liskov Substitution Principle (LSP): Subtypes should be replaceable for their base types without affecting 
+program correctness, ensuring smooth interchangeability in object-oriented systems.
+
+Interface Segregation Principle (ISP): Clients should not be forced to depend on interfaces they don’t use, 
+which promotes creating more client-specific interfaces.
+
+Dependency Inversion Principle (DIP): High-level modules should not depend on low-level modules; 
+both should rely on abstractions, fostering more decoupled and flexible systems.
+*/
+
+/*
+    V1 Codigo Original
+*/
+class SystemManager {
+    processOrder(order) {
+        if (order.type == "standard") {
+            verifyInventory(order);
+            processStandardPayment(order);
+        } else if (order.type == "express") {
+            verifyInventory(order);
+            processExpressPayment(order, "highPriority");
+        }
+        updateOrderStatus(order, "processed");
+        notifyCustomer(order);
+    }
+ 
+    verifyInventory(order) {
+        // Checks inventory levels
+        if (inventory < order.quantity) {
+            throw new Error("Out of stock");
+        }
+    }
+ 
+    processStandardPayment(order) {
+        // Handles standard payment processing
+        if (paymentService.process(order.amount)) {
+            return true;
+        } else {
+            throw new Error("Payment failed");
+        }
+    }
+ 
+    processExpressPayment(order, priority) {
+        // Handles express payment processing
+        if (expressPaymentService.process(order.amount, priority)) {
+            return true;
+        } else {
+            throw new Error("Express payment failed");
+        }
+    }
+ 
+    updateOrderStatus(order, status) {
+        // Updates the order status in the database
+        database.updateOrderStatus(order.id, status);
+    }
+ 
+    notifyCustomer(order) {
+        // Sends an email notification to the customer
+        emailService.sendEmail(order.customerEmail, "Your order has been processed.");
+    }
+}
+
+
+
+
+/*
+    V2 Aplicando Single Responsibility Principle (SRP)
+*/
+
+class SystemManager {
+}
+
+class OrderProcessor {
+    updateOrderStatus(order, status) {
+        // Actualiza el estado de la orden en la base de datos
+        database.updateOrderStatus(order.id, status);
+    }
+}
+
+class PaymentProcessor  {
+     processStandardPayment(order) {
+        // Handles standard payment processing
+        if (paymentService.process(order.amount)) {
+            return true;
+        } else {
+            throw new Error("Payment failed");
+        }
+    }
+ 
+    processExpressPayment(order, priority) {
+        // Handles express payment processing
+        if (expressPaymentService.process(order.amount, priority)) {
+            return true;
+        } else {
+            throw new Error("Express payment failed");
+        }
+    }
+}
+
+class InventoryManager {
+    // Checks inventory levels
+    if (inventory < order.quantity) {
+        throw new Error("Out of stock");
+    }
+}
+
+class OrderNotifier {
+    notifyCustomer(order) {
+        // Sends an email notification to the customer
+        emailService.sendEmail(order.customerEmail, "Your order has been processed.");
+    }
+}
+
+class OrderUpdater{
+     updateOrderStatus(order, status) {
+        // Updates the order status in the database
+        database.updateOrderStatus(order.id, status);
+    }
+}
+
+
+/*
+    V3 Open/Closed Principle (OCP)
+    Para evitar  modificar la logica de processOrder cada vez que añadas nuevos tipos de orden
+    Se define una interface y haciendo  clases especificas para cada orden(standar y express)
+    
+    Esto cumple con el principio de abierto/cerrado, ya que no necesitamos modificar el código existente,
+    solo extenderlo.
+*/
+
+class SystemManager {
+}
+
+class OrderProcessor {
+    process(order) {
+        throw new Error("This method should be overridden");
+    }
+}
+
+class StandardOrderProcessor extends OrderProcessor {
+    constructor(paymentProcessor, inventoryManager, orderUpdater, notifier) {
+        super();
+        this.paymentProcessor = paymentProcessor;
+        this.inventoryManager = inventoryManager;
+        this.orderUpdater = orderUpdater;
+        this.notifier = notifier;
+    }
+    
+    process(order) {
+        this.inventoryManager.verifyInventory(order);
+        this.paymentProcessor.processStandardPayment(order);
+        this.orderUpdater.updateOrderStatus(order, "processed");
+        this.notifier.notifyCustomer(order);
+    }
+}
+
+class ExpressOrderProcessor extends OrderProcessor {
+    constructor(paymentProcessor, inventoryManager, orderUpdater, notifier) {
+        super();
+        this.paymentProcessor = paymentProcessor;
+        this.inventoryManager = inventoryManager;
+        this.orderUpdater = orderUpdater;
+        this.notifier = notifier;
+    }
+    
+    process(order) {
+        this.inventoryManager.verifyInventory(order);
+        this.paymentProcessor.processExpressPayment(order, "highPriority");
+        this.orderUpdater.updateOrderStatus(order, "processed");
+        this.notifier.notifyCustomer(order);
+    }
+}
+
+
+class OrderUpdater {
+    updateOrderStatus(order, status) {
+        // Actualiza el estado de la orden en la base de datos
+        database.updateOrderStatus(order.id, status);
+    }
+}
+
+class PaymentProcessor  {
+     processStandardPayment(order) {
+        // Handles standard payment processing
+        if (paymentService.process(order.amount)) {
+            return true;
+        } else {
+            throw new Error("Payment failed");
+        }
+    }
+ 
+    processExpressPayment(order, priority) {
+        // Handles express payment processing
+        if (expressPaymentService.process(order.amount, priority)) {
+            return true;
+        } else {
+            throw new Error("Express payment failed");
+        }
+    }
+}
+
+class InventoryManager {
+    // Checks inventory levels
+    if (inventory < order.quantity) {
+        throw new Error("Out of stock");
+    }
+}
+
+class OrderNotifier {
+    notifyCustomer(order) {
+        // Sends an email notification to the customer
+        emailService.sendEmail(order.customerEmail, "Your order has been processed.");
+    }
+}
+
+
+/*
+    V4 Liskov Substitution Principle (LSP): 
+    Creando una interfaz OrderProcessor, garantizamos que SystemManager pueda trabajar con cualquier procesador de órdenes.
+*/
+
+class SystemManager {
+     constructor(orderProcessor) {
+        this.orderProcessor = orderProcessor;
+    }
+    
+    processOrder(order) {
+        this.orderProcessor.process(order);
+    }
+}
+
+class OrderProcessor {
+    process(order) {
+        throw new Error("This method should be overridden");
+    }
+}
+
+class StandardOrderProcessor extends OrderProcessor {
+    constructor(paymentProcessor, inventoryManager, orderUpdater, notifier) {
+        super();
+        this.paymentProcessor = paymentProcessor;
+        this.inventoryManager = inventoryManager;
+        this.orderUpdater = orderUpdater;
+        this.notifier = notifier;
+    }
+    
+    process(order) {
+        this.inventoryManager.verifyInventory(order);
+        this.paymentProcessor.processStandardPayment(order);
+        this.orderUpdater.updateOrderStatus(order, "processed");
+        this.notifier.notifyCustomer(order);
+    }
+}
+
+class ExpressOrderProcessor extends OrderProcessor {
+    constructor(paymentProcessor, inventoryManager, orderUpdater, notifier) {
+        super();
+        this.paymentProcessor = paymentProcessor;
+        this.inventoryManager = inventoryManager;
+        this.orderUpdater = orderUpdater;
+        this.notifier = notifier;
+    }
+    
+    process(order) {
+        this.inventoryManager.verifyInventory(order);
+        this.paymentProcessor.processExpressPayment(order, "highPriority");
+        this.orderUpdater.updateOrderStatus(order, "processed");
+        this.notifier.notifyCustomer(order);
+    }
+}
+
+
+class OrderUpdater {
+    updateOrderStatus(order, status) {
+        // Actualiza el estado de la orden en la base de datos
+        database.updateOrderStatus(order.id, status);
+    }
+}
+
+class PaymentProcessor  {
+     processStandardPayment(order) {
+        // Handles standard payment processing
+        if (paymentService.process(order.amount)) {
+            return true;
+        } else {
+            throw new Error("Payment failed");
+        }
+    }
+ 
+    processExpressPayment(order, priority) {
+        // Handles express payment processing
+        if (expressPaymentService.process(order.amount, priority)) {
+            return true;
+        } else {
+            throw new Error("Express payment failed");
+        }
+    }
+}
+
+class InventoryManager {
+    // Checks inventory levels
+    if (inventory < order.quantity) {
+        throw new Error("Out of stock");
+    }
+}
+
+class OrderNotifier {
+    notifyCustomer(order) {
+        // Sends an email notification to the customer
+        emailService.sendEmail(order.customerEmail, "Your order has been processed.");
+    }
+}
+
+/*
+    V5 Dependency Inversion Principle (DIP): High-level modules should not depend on low-level modules; 
+
+    Las clases OrderUpdater y OrderNotifier dependeden de  servicios como la base de datos y emailService 
+
+    Al inyectar emailService en OrderNotifier y database en OrderUpdater, las clases ya no dependen directamente de implementaciones concretas. 
+*/
+
+class SystemManager {
+     constructor(orderProcessor) {
+        this.orderProcessor = orderProcessor;
+    }
+    
+    processOrder(order) {
+        this.orderProcessor.process(order);
+    }
+}
+
+class OrderProcessor {
+    process(order) {
+        throw new Error("This method should be overridden");
+    }
+}
+
+class StandardOrderProcessor extends OrderProcessor {
+    constructor(paymentProcessor, inventoryManager, orderUpdater, notifier) {
+        super();
+        this.paymentProcessor = paymentProcessor;
+        this.inventoryManager = inventoryManager;
+        this.orderUpdater = orderUpdater;
+        this.notifier = notifier;
+    }
+    
+    process(order) {
+        this.inventoryManager.verifyInventory(order);
+        this.paymentProcessor.processStandardPayment(order);
+        this.orderUpdater.updateOrderStatus(order, "processed");
+        this.notifier.notifyCustomer(order);
+    }
+}
+
+class ExpressOrderProcessor extends OrderProcessor {
+    constructor(paymentProcessor, inventoryManager, orderUpdater, notifier) {
+        super();
+        this.paymentProcessor = paymentProcessor;
+        this.inventoryManager = inventoryManager;
+        this.orderUpdater = orderUpdater;
+        this.notifier = notifier;
+    }
+    
+    process(order) {
+        this.inventoryManager.verifyInventory(order);
+        this.paymentProcessor.processExpressPayment(order, "highPriority");
+        this.orderUpdater.updateOrderStatus(order, "processed");
+        this.notifier.notifyCustomer(order);
+    }
+}
+
+
+class PaymentProcessor {
+    constructor(paymentService) {
+        this.paymentService = paymentService; 
+    }
+    
+    processStandardPayment(order) {
+        if (this.paymentService.process(order.amount)) {
+            return true;
+        } else {
+            throw new Error("Payment failed");
+        }
+    }
+    
+    processExpressPayment(order, priority) {
+        if (this.paymentService.process(order.amount, priority)) {
+            return true;
+        } else {
+            throw new Error("Express payment failed");
+        }
+    }
+}
+
+class InventoryManager {
+    // Checks inventory levels
+    if (inventory < order.quantity) {
+        throw new Error("Out of stock");
+    }
+}
+
+
+class OrderNotifier {
+    constructor(emailService) {
+        this.emailService = emailService;
+    }
+
+    notifyCustomer(order) {
+        this.emailService.sendEmail(order.customerEmail, "Your order has been processed.");
+    }
+}
+
+class OrderUpdater {
+    constructor(database) {
+        this.database = database;
+    }
+
+    updateOrderStatus(order, status) {
+        this.database.updateOrderStatus(order.id, status);
+    }
+}
+
+class Main {
+    // Ejemplo de uso
+    const paymentProcessor = new PaymentProcessor(paymentService);
+    const inventoryManager = new InventoryManager();
+    const orderUpdater = new OrderUpdater(database);
+    const notifier = new OrderNotifier(emailService);
+
+    // Procesador de orden estándar
+    const standardOrderProcessor = new StandardOrderProcessor(
+        paymentProcessor, inventoryManager, orderUpdater, notifier
+    );
+    const systemManager = new SystemManager(standardOrderProcessor); 
+
+
+    // Procesador de orden exprés
+    const expressOrderProcessor = new ExpressOrderProcessor(
+        paymentProcessor, inventoryManager, orderUpdater, notifier
+    );
+    const systemManager = new SystemManager(expressOrderProcessor); 
+
+}
+
+
+
+
+
+
+
