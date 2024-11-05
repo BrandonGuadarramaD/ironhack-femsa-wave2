@@ -223,7 +223,8 @@ class OrderNotifier {
 
 /*
     V4 Liskov Substitution Principle (LSP): 
-    Creando una interfaz OrderProcessor, garantizamos que SystemManager pueda trabajar con cualquier procesador de órdenes.
+    Creando una interfaz OrderProcessor, garantizamos que SystemManager pueda trabajar con cualquier 
+    procesador de órdenes.
 */
 
 class SystemManager {
